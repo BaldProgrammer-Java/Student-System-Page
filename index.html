@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>学生信息查询管理系统</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 导入Element-UI CSS -->
+    <link rel="stylesheet" href="js/element-ui/index.css"/>
+    <!-- 导入本地 CSS -->
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+<!-- Vue对象挂载点(容器) -->
+<div class="app" id="app">
+    <!-- 标题 -->
+    <div class="title">
+        <h1>学生信息查询管理系统</h1>
+    </div>
+
+    <!-- 主体 -->
+    <div class="main">
+        <div class="operating_space">
+            <el-button type="primary" class="new_student_information" plain @click="openForm('新增')">
+                新增
+            </el-button>
+            <el-dialog width="20%" center :title="formTitle" :visible.sync="dialogFormVisible">
+                <el-form :model="form" :label-width="formLabelWidth">
+                    <el-form-item label="姓名" :label-width="formLabelItemWidth">
+                        <el-input v-model="form.stuName" autocomplete="off" style="width: 200px"></el-input>
+                    </el-form-item>
+                    <el-form-item label="性别" :label-width="formLabelItemWidth">
+                        <el-radio v-model="form.stuSex" label="男">男</el-radio>
+                        <el-radio v-model="form.stuSex" label="女">女</el-radio>
+                    </el-form-item>
+                    <el-form-item label="年龄" :label-width="formLabelItemWidth">
+                        <el-input v-model="form.stuAge" autocomplete="off" style="width: 200px"></el-input>
+                    </el-form-item>
+                    <el-form-item label="成绩" :label-width="formLabelItemWidth">
+                        <el-input v-model="form.score" autocomplete="off" style="width: 200px"></el-input>
+                    </el-form-item>
+                    <el-form-item label="班级" :label-width="formLabelItemWidth">
+                        <el-input v-model="form.className" autocomplete="off" style="width: 200px"></el-input>
+                    </el-form-item>
+                </el-form>
+                <div slot="footer" class="dialog-footer">
+                    <el-button @click="callOff">取 消</el-button>
+                    <el-button type="primary" @click="submit">{{ formSubmitTitle }}</el-button>
+                </div>
+            </el-dialog>
+
+            <span>条件：</span>
+            <el-input
+                    type="text"
+                    class="searchInput"
+                    placeholder="请输入姓名来搜索"
+                    prefix-icon="el-icon-search"
+                    v-model="input">
+            </el-input>
+            <el-button icon="el-icon-search" @click="submitSearch" circle></el-button>
+
+            <el-button type="danger" class="del" @click="deleteStudentInformation" plain>
+                删除
+            </el-button>
+        </div>
+
+        <div class="information_sheet">
+            <el-table
+                    stripe
+                    ref="multipleTable"
+                    :data="tableData"
+                    tooltip-effect="dark"
+                    style="width: 50%"
+                    @select="((value)=>{handleSelectionChange(value)})"
+                    @select-all="((value)=>{handleSelectionChange(value)})"
+            >
+                <el-table-column
+                        type="selection"
+                        width="55">
+                </el-table-column>
+                <el-table-column
+                        prop="stuNo"
+                        label="学号"
+                        width="120"
+                        show-overflow-tooltip>
+                </el-table-column>
+                <el-table-column
+                        prop="stuName"
+                        label="姓名"
+                        width="120"
+                        show-overflow-tooltip>
+                </el-table-column>
+                <el-table-column
+                        prop="stuSex"
+                        label="性别"
+                        show-overflow-tooltip>
+                </el-table-column>
+                <el-table-column
+                        prop="stuAge"
+                        label="年龄"
+                        show-overflow-tooltip>
+                </el-table-column>
+                <el-table-column
+                        prop="score"
+                        label="成绩"
+                        show-overflow-tooltip>
+                </el-table-column>
+                <el-table-column
+                        prop="className"
+                        label="班级"
+                        show-overflow-tooltip>
+                </el-table-column>
+                <el-table-column
+                        fixed="right"
+                        label="操作"
+                        width="100">
+                    <template slot-scope="scope">
+                        <el-button type="text" size="small"
+                                   @click="openForm('修改'); onclickUpdateStudentInformation(scope.row.stuNo)">
+                            修改
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <el-pagination
+                    v-show="paginationShow"
+                    @current-change="getPageNum"
+                    class="paging"
+                    background
+                    layout="total, prev, pager, next"
+                    :page-size="6"
+                    :total="pageTotal">
+            </el-pagination>
+        </div>
+    </div>
+
+    <!-- 底部版权信息 -->
+    <div class="copyright">
+        Developer：BaldProgrammer
+    </div>
+</div>
+
+<!-- 导入Vue.JS -->
+<script src="js/vue/vue.js"></script>
+<!-- 导入Element-UI -->
+<script src="js/element-ui/index.js"></script>
+<!-- 导入Axios -->
+<script src="js/axios/axios.min.js"></script>
+<!-- 导入Api -->
+<script src="js/api.js"></script>
+<!-- 导入请求工具 -->
+<script src="js/requestUtils.js"></script>
+
+<script>
+    new Vue({
+        el: '#app', //挂载到网页元素
+        // 数据体 (数据双向绑定)
+        data() {
+            return {
+                input: '', // 模糊搜索输入框
+                tableData: [], // 表格数据体
+                paginationShow: true, // 分页显示控制
+                currentPage: null,  // 分页页面输入值
+                pageTotal: null,   // 总条数
+                dialogTableVisible: false,
+                dialogFormVisible: false, // 弹出表单(模态窗表单) 默认隐藏
+                form: {  // 表单数据体
+                    stuNo: '', // 学生学号 表单内不显示、作为id使用
+                    stuName: '',  // 学生姓名
+                    stuSex: '',   // 学生性别
+                    stuAge: '',   // 学生年龄
+                    score: '',    // 成绩
+                    className: '' // 班级
+                },
+                formLabelWidth: '100px', // form表单宽度
+                formLabelItemWidth: '100px', // form表单宽度
+                formTitle: '', // 表单标题
+                formSubmitTitle: '',  // 表单提交按钮文字
+                pageNumData: '',  //当前页数
+                pageNum: null,  // 分页页数
+                pageSize: null,  // 分页数据条数
+                multipleSelection: [], // check框原始数组
+                selectionStuNo: [],    // 遍历后的check框数据
+                checkStuNo: '',        // 经过转换后的check框数据
+            }
+        },
+        // 生命周期钩子(创建)
+        created() {
+            // 创建页面时获取第一页用于初始化展示
+            this.getPageStudentInformationAll(1, 6)
+        },
+        // 方法体
+        methods: {
+            /****** 操作区 ******/
+
+            // 打开模态窗表单
+            openForm(value) {
+                if (value === '新增') {
+                    this.formTitle = '新增信息'
+                    this.formSubmitTitle = '新增'//value
+                    this.callOff()
+                } else if (value === '修改') {
+                    this.formTitle = '修改信息'
+                    this.formSubmitTitle = value
+                }
+                this.dialogFormVisible = true
+            },
+            // 提交数据 包含新增操作和修改操作的数据提交
+            submit() {
+                if (this.formSubmitTitle === '新增') {
+                    this.newStudentInformation(this.form)
+                    this.callOff()
+                } else if (this.formSubmitTitle === '修改') {
+                    this.updateStudentInformation(this.form)
+                }
+            },
+            // 提交搜索
+            submitSearch() {
+                /**
+                 * 判断搜索输入框里是否为空
+                 * 如果为空就调取查询所有学生信息函数
+                 * 如果不为空就调取模糊搜索学生信息函数
+                 */
+                if (this.input === '') {
+                    this.getPageStudentInformationAll(1, 6)
+                } else {
+                    this.searchStudentInformation()
+                }
+            },
+            // 获取Checkbox框
+            handleSelectionChange(val) {
+                this.multipleSelection = val;
+            },
+            // 点击打开修改
+            onclickUpdateStudentInformation(stuNo) {
+                this.getStudentInformationById(stuNo)
+                this.dialogFormVisible = true
+            },
+
+            /****** 操作区-结束 ******/
+
+
+
+            /****** 请求区 ******/
+
+            // 新增学生信息请求
+            newStudentInformation(data) {
+                axios.post(baseApi + '/student/addStudentInformation', data).then(res => {
+                    this.$message({
+                        message: res.data.data,
+                        type: 'success'
+                    });
+                    this.getStudentInformationAll()
+                })
+            },
+            // 删除学生信息请求(单删除、多删除)
+            deleteStudentInformation() {
+                // 转换数据格式
+                this.dataConversion()
+
+                console.log(this.checkStuNo)
+
+                formData.append('ids', this.checkStuNo)
+                axios.post(baseApi + '/student/deleteStudentInformation', formData, headersConfig).then(res => {
+                    this.$message({
+                        message: res.data.data,
+                        type: 'success'
+                    });
+                    this.selectionStuNo = []
+                    this.checkStuNo = ''
+                })
+            },
+            // 查询(拿到)所有学生信息请求
+            getStudentInformationAll() {
+                axios.get(baseApi + '/student/queryStudentInformationAll').then(res => {
+                    this.tableData = res.data.data
+                    this.paginationShow = true
+                })
+            },
+            // 查询(拿到)分页的学生信息请求
+            getPageStudentInformationAll(pageNum, pageSize) {
+                formData.append('pageNum', pageNum)
+                formData.append('pageSize', pageSize)
+                axios.post(baseApi + '/student/pageQueryStudentInformationAll', formData, headersConfig).then(res => {
+                    this.tableData = res.data.data.list
+                    this.pageTotal = res.data.data.total
+                    this.paginationShow = true
+                    formData.delete('pageNum')
+                    formData.delete('pageSize')
+                })
+            },
+            // 根据学生学号(Id)查询学生信息请求
+            getStudentInformationById(data) {
+                formData.append('id', data);
+
+                axios.post(baseApi + '/student/getStudentInformationById', formData, headersConfig).then(res => {
+                    this.form.stuNo = res.data.data.stuNo
+                    this.form.stuName = res.data.data.stuName
+                    this.form.stuSex = res.data.data.stuSex
+                    this.form.stuAge = res.data.data.stuAge
+                    this.form.score = res.data.data.score
+                    this.form.className = res.data.data.className
+
+                    formData.delete('id')
+                })
+            },
+            // 根据条件模糊搜索学生信息请求
+            searchStudentInformation() {
+                // 将输入框的值存放到formData对象中 创建searchValue属性并存入属性值 属性值就是输入框的值
+                formData.append('searchValue', this.input);
+
+                /*axios.post(baseApi + '/student/searchStudentInformation', formData, headersConfig).then(res => {
+                    if (res.data.code === "200") {
+                        this.tableData = res.data.data
+                        formData.delete('searchValue') //从formData对象中删除此属性
+                    } else {
+                        this.$message({
+                            message: res.data.message,
+                            type: 'warning'
+                        });
+                    }
+                })*/
+
+                axios.post(baseApi + '/student/searchStudentInformation', formData, headersConfig).then(res => {
+                    this.tableData = res.data.data
+                    formData.delete('searchValue') //从formData对象中删除此属性
+                    this.paginationShow = false
+                })
+            },
+            // 修改学生信息请求
+            updateStudentInformation(data) {
+                axios.post(baseApi + '/student/updateStudentInformation', data).then(res => {
+                    this.$message({
+                        message: res.data.data,
+                        type: 'success'
+                    });
+                    this.callOff()
+                    this.getStudentInformationAll()
+                })
+            },
+
+            /****** 请求区-结束 ******/
+
+
+
+            /****** 工具函数区 ******/
+
+            // 拿到页数(分页页数)
+            getPageNum(val) {
+                console.log(`当前页: ${val}`);
+                this.delPageNumData = val
+                this.getPageStudentInformationAll(val, 6)
+            },
+            // 数据转换
+            dataConversion() {
+                /**
+                 * 1、遍历数据
+                 *  通过循环遍历multipleSelection的数据，并推送到selectionStuNo数组
+                 * 2、数据转型并添加分隔符号
+                 *  调用join()方法将selectionStuNo数组通过指定的分隔符进行分割，然后放到checkStuNo中
+                 */
+                for (let i = 0; i < this.multipleSelection.length; i++) {
+                    this.selectionStuNo.push(this.multipleSelection[i].stuNo)
+                    this.checkStuNo = this.selectionStuNo.join(',')
+                }
+            },
+            // 取消表单显示并清空表单
+            callOff() {
+                this.dialogFormVisible = false
+                this.form.stuNo = ''
+                this.form.stuName = ''
+                this.form.stuSex = ''
+                this.form.stuAge = ''
+                this.form.score = ''
+                this.form.className = ''
+            }
+
+            /****** 工具函数-结束 ******/
+        }
+    })
+</script>
+</body>
+</html>

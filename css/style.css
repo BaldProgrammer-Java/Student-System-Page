@@ -1,0 +1,77 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+
+.title {
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    font-size: 25px;
+    margin-top: 50px;
+}
+
+.main {
+
+}
+
+.operating_space {
+    position: relative;
+    top: 50px;
+    left: 550px;
+    font-size: 20px;
+}
+
+.Dialog {
+    width: 860px;
+    margin: 0 auto;
+}
+
+.operating_space > .new_student_information {
+    font-size: 20px;
+    margin-left: -50px;
+}
+
+.operating_space > span {
+    margin-left: 10px;
+}
+
+.operating_space > .searchInput {
+    width: 220px;
+    font-size: 20px;
+}
+
+.operating_space > .query {
+    width: 100px;
+    height: 33px;
+    font-size: 20px;
+    margin-left: 10px;
+}
+
+.del {
+    position: relative;
+    left: 25%;
+    transform: translate(-50%, -50%);
+    font-size: 20px;
+}
+
+.information_sheet {
+    position: relative;
+    top: 70px;
+    left: 480px;
+}
+
+.paging {
+    position: relative;
+    top: 16px;
+    left: 12%;
+}
+
+.copyright {
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    font-size: 19px;
+    margin-top: 250px;
+}

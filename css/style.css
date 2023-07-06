@@ -14,7 +14,7 @@
 
 /* 头部 */
 .header {
-    background-color: #333;
+    background-color: #409EFF;
     color: #fff;
     padding: 20px;
     text-align: center;
@@ -108,7 +108,7 @@
 
 /* 底部版权 */
 .footer {
-    background-color: #333;
+    background-color: #409EFF;
     color: #fff;
     padding: 16px;
     text-align: center;

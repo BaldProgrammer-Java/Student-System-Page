@@ -4,22 +4,25 @@
     <meta charset="UTF-8">
     <title>学生信息查询管理系统</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="./images/student.jpg">
     <!-- 导入Element-UI CSS -->
-    <link rel="stylesheet" href="js/element-ui/index.css"/>
+    <link rel="stylesheet" href="./js/element-ui/index.css"/>
     <!-- 导入本地 CSS -->
     <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
 <!-- Vue对象挂载点(容器) -->
-<div class="app" id="app">
+<div class="container" id="app">
     <!-- 标题 -->
-    <div class="title">
+    <div class="header">
+        <img src="./images/student.jpg" alt="Logo">
         <h1>学生信息查询管理系统</h1>
     </div>
 
     <!-- 主体 -->
-    <div class="main">
-        <div class="operating_space">
+    <div class="content">
+        <!-- 功能区 -->
+        <div class="box Action_bare">
             <el-button type="primary" class="new_student_information" plain @click="openForm('新增')">
                 新增
             </el-button>
@@ -56,20 +59,20 @@
                     prefix-icon="el-icon-search"
                     v-model="input">
             </el-input>
-            <el-button icon="el-icon-search" @click="submitSearch" circle></el-button>
+            <el-button icon="el-icon-search" @click="submitSearch" class="search" circle></el-button>
 
-            <el-button type="danger" class="del" @click="deleteStudentInformation" plain>
+            <el-button type="danger" class="del" @click="submitDelStudentInformation" plain>
                 删除
             </el-button>
         </div>
 
-        <div class="information_sheet">
+        <!-- 数据展示区(表格) -->
+        <div class="box">
             <el-table
                     stripe
                     ref="multipleTable"
                     :data="tableData"
                     tooltip-effect="dark"
-                    style="width: 50%"
                     @select="((value)=>{handleSelectionChange(value)})"
                     @select-all="((value)=>{handleSelectionChange(value)})"
             >
@@ -122,7 +125,9 @@
                 </el-table-column>
             </el-table>
 
+            <!-- 分页 -->
             <el-pagination
+                    class="pagination"
                     v-show="paginationShow"
                     @current-change="getPageNum"
                     class="paging"
@@ -135,21 +140,21 @@
     </div>
 
     <!-- 底部版权信息 -->
-    <div class="copyright">
+    <div class="footer">
         Developer：BaldProgrammer
     </div>
 </div>
 
 <!-- 导入Vue.JS -->
-<script src="js/vue/vue.js"></script>
+<script src="./js/vue/vue.js"></script>
 <!-- 导入Element-UI -->
-<script src="js/element-ui/index.js"></script>
+<script src="./js/element-ui/index.js"></script>
 <!-- 导入Axios -->
-<script src="js/axios/axios.min.js"></script>
+<script src="./js/axios/axios.min.js"></script>
 <!-- 导入Api -->
-<script src="js/api.js"></script>
+<script src="./js/api.js"></script>
 <!-- 导入请求工具 -->
-<script src="js/requestUtils.js"></script>
+<script src="./js/requestUtils.js"></script>
 
 <script>
     new Vue({
@@ -157,13 +162,22 @@
         // 数据体 (数据双向绑定)
         data() {
             return {
+                /* ####################控制数据体########################## */
+
+                dialogTableVisible: false,
+                dialogFormVisible: false, // 弹出表单(模态窗表单) 默认隐藏
+                formLabelWidth: '100px', // form表单宽度
+                formLabelItemWidth: '100px', // form表单宽度
+
+                /* ##################################################### */
+
+                /* ####################功能数据体########################## */
+
                 input: '', // 模糊搜索输入框
                 tableData: [], // 表格数据体
                 paginationShow: true, // 分页显示控制
                 currentPage: null,  // 分页页面输入值
                 pageTotal: null,   // 总条数
-                dialogTableVisible: false,
-                dialogFormVisible: false, // 弹出表单(模态窗表单) 默认隐藏
                 form: {  // 表单数据体
                     stuNo: '', // 学生学号 表单内不显示、作为id使用
                     stuName: '',  // 学生姓名
@@ -172,8 +186,6 @@
                     score: '',    // 成绩
                     className: '' // 班级
                 },
-                formLabelWidth: '100px', // form表单宽度
-                formLabelItemWidth: '100px', // form表单宽度
                 formTitle: '', // 表单标题
                 formSubmitTitle: '',  // 表单提交按钮文字
                 pageNumData: '',  //当前页数
@@ -182,6 +194,8 @@
                 multipleSelection: [], // check框原始数组
                 selectionStuNo: [],    // 遍历后的check框数据
                 checkStuNo: '',        // 经过转换后的check框数据
+
+                /* #################################################### */
             }
         },
         // 生命周期钩子(创建)
@@ -205,6 +219,7 @@
                 }
                 this.dialogFormVisible = true
             },
+
             // 提交数据 包含新增操作和修改操作的数据提交
             submit() {
                 if (this.formSubmitTitle === '新增') {
@@ -214,6 +229,7 @@
                     this.updateStudentInformation(this.form)
                 }
             },
+
             // 提交搜索
             submitSearch() {
                 /**
@@ -224,17 +240,37 @@
                 if (this.input === '') {
                     this.getPageStudentInformationAll(1, 6)
                 } else {
-                    this.searchStudentInformation()
+                    this.searchStudentInformation(this.input)
                 }
             },
+
             // 获取Checkbox框
             handleSelectionChange(val) {
                 this.multipleSelection = val;
             },
+
             // 点击打开修改
             onclickUpdateStudentInformation(stuNo) {
                 this.getStudentInformationById(stuNo)
                 this.dialogFormVisible = true
+            },
+
+            // 拿到页数(分页页数)
+            getPageNum(val) {
+                console.log(`当前页: ${val}`);
+                this.pageNumData = val
+                console.log(this.pageNumData)
+                this.getPageStudentInformationAll(val, 6)
+            },
+
+            // 提交删除
+            submitDelStudentInformation() {
+                // 转换数据格式
+                this.dataConversion()
+
+                console.log(this.checkStuNo)
+
+                this.deleteStudentInformation(this.checkStuNo)
             },
 
             /****** 操作区-结束 ******/
@@ -253,30 +289,32 @@
                     this.getStudentInformationAll()
                 })
             },
+
             // 删除学生信息请求(单删除、多删除)
-            deleteStudentInformation() {
-                // 转换数据格式
-                this.dataConversion()
+            deleteStudentInformation(data) {
+                formData.append('ids', data) // 将学号数组添加到表单提交对象里
 
-                console.log(this.checkStuNo)
-
-                formData.append('ids', this.checkStuNo)
                 axios.post(baseApi + '/student/deleteStudentInformation', formData, headersConfig).then(res => {
                     this.$message({
                         message: res.data.data,
                         type: 'success'
                     });
-                    this.selectionStuNo = []
-                    this.checkStuNo = ''
+                    this.selectionStuNo = [] // 清空selectionStuNo里的数据
+                    this.checkStuNo = ''     // 清空checkStuNo里的数据
+                    // 刷新数据 通过当前的页数刷新数据，当没有本页的时候自动刷新上一页数据
+                    this.getPageStudentInformationAll(this.pageNumData, 6)
+                    formData.delete('ids') // 清空表单提交对象里的数据
                 })
             },
-            // 查询(拿到)所有学生信息请求
+
+            /*// 查询(拿到)所有学生信息请求
             getStudentInformationAll() {
                 axios.get(baseApi + '/student/queryStudentInformationAll').then(res => {
                     this.tableData = res.data.data
                     this.paginationShow = true
                 })
-            },
+            },*/
+
             // 查询(拿到)分页的学生信息请求
             getPageStudentInformationAll(pageNum, pageSize) {
                 formData.append('pageNum', pageNum)
@@ -289,6 +327,7 @@
                     formData.delete('pageSize')
                 })
             },
+
             // 根据学生学号(Id)查询学生信息请求
             getStudentInformationById(data) {
                 formData.append('id', data);
@@ -304,10 +343,11 @@
                     formData.delete('id')
                 })
             },
+
             // 根据条件模糊搜索学生信息请求
-            searchStudentInformation() {
+            searchStudentInformation(data) {
                 // 将输入框的值存放到formData对象中 创建searchValue属性并存入属性值 属性值就是输入框的值
-                formData.append('searchValue', this.input);
+                formData.append('searchValue', data);
 
                 /*axios.post(baseApi + '/student/searchStudentInformation', formData, headersConfig).then(res => {
                     if (res.data.code === "200") {
@@ -327,6 +367,7 @@
                     this.paginationShow = false
                 })
             },
+
             // 修改学生信息请求
             updateStudentInformation(data) {
                 axios.post(baseApi + '/student/updateStudentInformation', data).then(res => {
@@ -345,12 +386,6 @@
 
             /****** 工具函数区 ******/
 
-            // 拿到页数(分页页数)
-            getPageNum(val) {
-                console.log(`当前页: ${val}`);
-                this.delPageNumData = val
-                this.getPageStudentInformationAll(val, 6)
-            },
             // 数据转换
             dataConversion() {
                 /**
@@ -364,6 +399,7 @@
                     this.checkStuNo = this.selectionStuNo.join(',')
                 }
             },
+
             // 取消表单显示并清空表单
             callOff() {
                 this.dialogFormVisible = false
